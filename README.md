@@ -4,7 +4,7 @@ CountryPicker
 Country picker table view controller for iOS7+.  
 It has convinient search and dynamic fonts support.
 
-![](https://bitbucket.org/shmidt/slcountrypicker/raw/f6b87d0ad5c335963d4083f3a1bc63a838bf7a9c/1.jpg)![](https://bitbucket.org/shmidt/slcountrypicker/raw/f6b87d0ad5c335963d4083f3a1bc63a838bf7a9c/2.jpg)
+![](https://bitbucket.org/shmidt/slcountrypicker/raw/7aab1cc8eca15c9e831c0bf4d998660ab5dbef07/1.jpg)![](https://bitbucket.org/shmidt/slcountrypicker/raw/7aab1cc8eca15c9e831c0bf4d998660ab5dbef07/2.jpg)
 
 
 ##Supported Platforms

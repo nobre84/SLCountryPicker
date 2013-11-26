@@ -8,26 +8,16 @@ Pod::Spec.new do |s|
                    Shows a searchable list of countries.
 
   s.homepage     = "https://bitbucket.org/shmidt/slcountrypicker/overview"
-  # s.screenshots  = "www.example.com/screenshots_1", "www.example.com/screenshots_2"
+  # s.screenshots  = "https://bitbucket.org/shmidt/slcountrypicker/raw/7aab1cc8eca15c9e831c0bf4d998660ab5dbef07/1.jpg", "https://bitbucket.org/shmidt/slcountrypicker/raw/7aab1cc8eca15c9e831c0bf4d998660ab5dbef07/2.jpg"
   s.license      = 'MIT'
   s.author       = { "Dmitry Shmidt" => "mail@shmidtlab.com" }
   s.platform     = :ios, '7.0'
-
-  s.source       = { :git => "https://shmidt@bitbucket.org/shmidt/slcountrypicker", :commit => "487d7930a000a9edfc750c6ac57e9bf0ba9d42e8" }
+  s.social_media_url = 'https://twitter.com/shmidtlab'
+  s.source       = { :hg => "https://shmidt@bitbucket.org/shmidt/slcountrypicker", :commit => "487d7930a000a9edfc750c6ac57e9bf0ba9d42e8" }
   s.source_files  = 'CountryPicker', 'CountryPicker/**/*.{h,m}'
 
-  # ――― Resources ―――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――― #
-  #
-  #  A list of resources included with the Pod. These are copied into the
-  #  target bundle with a build phase script. Anything else will be cleaned.
-  #  You can preserve files from being cleaned, please don't preserve
-  #  non-essential files like tests, examples and documentation.
-  #
-
-  # s.resource  = "icon.png"
-  # s.resources = "Resources/*.png"
-
-  # s.preserve_paths = "FilesToSave", "MoreFilesToSave"
+  s.resource  = "CountryPicker/CountriesFlags36px.xcassets"
+  s.preserve_paths = "CountryPicker/CountriesFlags36px.xcassets/*"
 
   s.requires_arc = true
 
