@@ -14,8 +14,7 @@ Table view controller with searchable list of countries with completion block an
   s.platform     = :ios, '7.0'
   s.social_media_url = 'https://twitter.com/shmidtlab'
   s.source       = { :hg => "https://shmidt@bitbucket.org/shmidt/slcountrypicker", :revision => s.version.to_s }
-  s.source_files  = 'CountryPicker', 'CountryPicker/*.{h,m}'
-  s.exclude_files = "CountryPickerDemo/*"
+  s.source_files  = 'CountryPicker'
   s.resource  = "CountryPicker/CountriesFlags36px.xcassets"
   s.preserve_paths = "CountryPicker/CountriesFlags36px.xcassets/*"
   s.requires_arc = true

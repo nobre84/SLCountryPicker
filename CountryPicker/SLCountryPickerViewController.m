@@ -3,7 +3,6 @@
 //  mail@shmidtlab.com
 
 #import "SLCountryPickerViewController.h"
-#import "AppDelegate.h"
 
 static NSString *CellIdentifier = @"CountryCell";
 @interface SLCountryPickerViewController ()<UISearchDisplayDelegate, UISearchBarDelegate>
