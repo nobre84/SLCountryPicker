@@ -10,8 +10,8 @@ static NSString *CellIdentifier = @"CountryCell";
 @end
 
 @implementation SLCountryPickerViewController{
-    NSArray *countries;
-    NSMutableArray *filteredCountryArray;
+    NSMutableArray *_filteredList;
+    NSArray *_sections;
 }
 
 - (void)createSearchBar {
@@ -32,9 +32,8 @@ static NSString *CellIdentifier = @"CountryCell";
             _searchController.searchResultsDataSource = self;
             _searchController.searchResultsDelegate = self;
             
-            [_searchController setActive:YES animated:YES];
+//            [_searchController setActive:YES animated:YES];
             [theSearchBar becomeFirstResponder];
-
 //            _searchController.displaysSearchBarInNavigationBar = YES;
         }
 }
@@ -47,7 +46,7 @@ static NSString *CellIdentifier = @"CountryCell";
     NSArray *countryCodes = [NSLocale ISOCountryCodes];
     
     NSMutableArray *countriesUnsorted = [[NSMutableArray alloc] initWithCapacity:countryCodes.count];
-    filteredCountryArray = [[NSMutableArray alloc] initWithCapacity:countryCodes.count];
+    _filteredList = [[NSMutableArray alloc] initWithCapacity:countryCodes.count];
     
     for (NSString *countryCode in countryCodes) {
         
@@ -56,11 +55,12 @@ static NSString *CellIdentifier = @"CountryCell";
         [countriesUnsorted addObject:cd];
         
     }
-    NSSortDescriptor *sortDescriptor = [[NSSortDescriptor alloc] initWithKey:@"name" ascending:YES];
-    
-    NSArray *sortDescriptors = @[sortDescriptor];
-    
-    countries = [countriesUnsorted sortedArrayUsingDescriptors:sortDescriptors];
+    _sections = [self partitionObjects:countriesUnsorted collationStringSelector:@selector(self)];
+//    NSSortDescriptor *sortDescriptor = [[NSSortDescriptor alloc] initWithKey:@"name" ascending:YES];
+//    
+//    NSArray *sortDescriptors = @[sortDescriptor];
+//    
+//    countries = [countriesUnsorted sortedArrayUsingDescriptors:sortDescriptors];
 //    [countries sortUsingSelector:@selector(localizedCompare:)];
     [self.tableView reloadData];
     
@@ -77,29 +77,77 @@ static NSString *CellIdentifier = @"CountryCell";
 {
     [[NSNotificationCenter defaultCenter]removeObserver:self name:UIContentSizeCategoryDidChangeNotification object:nil];
 }
-- (void)didReceiveMemoryWarning
-{
-    [super didReceiveMemoryWarning];
-    // Dispose of any resources that can be recreated.
-}
 
 #pragma mark - Table view data source
+-(NSArray *)partitionObjects:(NSArray *)array collationStringSelector:(SEL)selector
+{
+    UILocalizedIndexedCollation *collation = [UILocalizedIndexedCollation currentCollation];
+    NSInteger sectionCount = [[collation sectionTitles] count];
+    NSMutableArray *unsortedSections = [NSMutableArray arrayWithCapacity:sectionCount];
+    
+    for (int i = 0; i < sectionCount; i++) {
+        [unsortedSections addObject:[NSMutableArray array]];
+    }
+    
+    for (id object in array) {
+        NSInteger index = [collation sectionForObject:object[@"name"] collationStringSelector:selector];
+        [[unsortedSections objectAtIndex:index] addObject:object];
+    }
+    
+    NSMutableArray *sections = [NSMutableArray arrayWithCapacity:sectionCount];
+    NSSortDescriptor *sortDescriptor = [[NSSortDescriptor alloc] initWithKey:@"name" ascending:YES selector:@selector(localizedCaseInsensitiveCompare:)];
+    NSArray *sortDescriptors = [NSArray arrayWithObject:sortDescriptor];
+    
+    
+    for (NSMutableArray *section in unsortedSections) {
+        NSArray *sortedArray = [section sortedArrayUsingDescriptors:sortDescriptors];
+//        [collation sortedArrayFromArray:section collationStringSelector:selector]];
+//    collationStringSelector:selector]];
+        [sections addObject:sortedArray];
+    }
+    
+    return sections;
+}
+
+- (NSArray *)sectionIndexTitlesForTableView:(UITableView *)tableView
+{
+    return [UILocalizedIndexedCollation.currentCollation sectionIndexTitles];
+}
 
 - (NSInteger)numberOfSectionsInTableView:(UITableView *)tableView
 {
-    return 1;
-}
-- (NSInteger)tableView:(UITableView *)tableView numberOfRowsInSection:(NSInteger)section
-{
-    // Check to see whether the normal table or search results table is being displayed and return the count from the appropriate array
     if (tableView == self.searchDisplayController.searchResultsTableView)
 	{
-        return filteredCountryArray.count;
+        return 1;
     }
-	else
+    //we use sectionTitles and not sections
+    return [[UILocalizedIndexedCollation.currentCollation sectionTitles] count];
+}
+
+- (NSInteger)tableView:(UITableView *)tableView numberOfRowsInSection:(NSInteger)section
+{
+    if (tableView == self.searchDisplayController.searchResultsTableView)
 	{
-        return countries.count;
+        return [_filteredList count];
     }
+    return [_sections[section] count];
+}
+
+
+- (NSString *)tableView:(UITableView *)tableView titleForHeaderInSection:(NSInteger)section
+{
+    if (tableView == self.searchDisplayController.searchResultsTableView) {
+        return nil;
+    }
+    BOOL showSection = [[_sections objectAtIndex:section] count] != 0;
+    //only show the section title if there are rows in the section
+    return (showSection) ? [[UILocalizedIndexedCollation.currentCollation sectionTitles] objectAtIndex:section] : nil;
+    
+}
+
+- (NSInteger)tableView:(UITableView *)tableView sectionForSectionIndexTitle:(NSString *)title atIndex:(NSInteger)index
+{
+    return [[UILocalizedIndexedCollation currentCollation] sectionForSectionIndexTitleAtIndex:index];
 }
 
 - (UITableViewCell *)tableView:(UITableView *)tableView cellForRowAtIndexPath:(NSIndexPath *)indexPath
@@ -112,7 +160,7 @@ static NSString *CellIdentifier = @"CountryCell";
     
     if (tableView == self.searchDisplayController.searchResultsTableView)
 	{
-        cd = filteredCountryArray[indexPath.row];
+        cd = _filteredList[indexPath.row];
         
         NSMutableAttributedString *attributedTitle = [[NSMutableAttributedString alloc] initWithString:cd[@"name"] attributes:@{NSForegroundColorAttributeName: [UIColor colorWithWhite:0.785 alpha:1.000], NSFontAttributeName:[UIFont preferredFontForTextStyle:UIFontTextStyleBody]}];
         [attributedTitle addAttribute:NSForegroundColorAttributeName
@@ -123,7 +171,8 @@ static NSString *CellIdentifier = @"CountryCell";
     }
 	else
 	{
-        cd = countries[indexPath.row];
+        cd = _sections[indexPath.section][indexPath.row];
+        
         cell.textLabel.text = cd[@"name"];
         cell.textLabel.font = [UIFont preferredFontForTextStyle:UIFontTextStyleBody];
     }
@@ -143,10 +192,10 @@ static NSString *CellIdentifier = @"CountryCell";
         NSDictionary *cd = nil;
         
         if(tableView == self.searchDisplayController.searchResultsTableView) {
-            cd = filteredCountryArray[indexPath.row];
+            cd = _filteredList[indexPath.row];
         }
         else {
-            cd = countries[indexPath.row];
+            cd = _sections[indexPath.section][indexPath.row];
         }
         self.completionBlock(cd[@"name"],cd[@"code"]);
     }
@@ -157,21 +206,23 @@ static NSString *CellIdentifier = @"CountryCell";
 
 - (void)filterContentForSearchText:(NSString*)searchText scope:(NSString*)scope
 {
-	[filteredCountryArray removeAllObjects];
+	[_filteredList removeAllObjects];
     
-	// Filter the array using NSPredicate
-    NSPredicate *predicate = [NSPredicate predicateWithFormat:@"SELF.name BEGINSWITH[c] %@", searchText];
-    NSArray *tempArray = [countries filteredArrayUsingPredicate:predicate];
-    
-    filteredCountryArray = [NSMutableArray arrayWithArray:tempArray];
+    for (NSArray *section in _sections) {
+        for (NSDictionary *dict in section)
+        {
+                NSComparisonResult result = [dict[@"name"] compare:searchText options:(NSCaseInsensitiveSearch|NSDiacriticInsensitiveSearch) range:NSMakeRange(0, [searchText length])];
+                if (result == NSOrderedSame)
+                {
+                    [_filteredList addObject:dict];
+                }
+        }
+    }
 }
-
-
 #pragma mark - UISearchDisplayController Delegate Methods
 
 - (BOOL)searchDisplayController:(UISearchDisplayController *)controller shouldReloadTableForSearchString:(NSString *)searchString
 {
-    // Tells the table data source to reload when text changes
     [self filterContentForSearchText:searchString scope:
      [self.searchDisplayController.searchBar scopeButtonTitles][[self.searchDisplayController.searchBar selectedScopeButtonIndex]]];
     
@@ -181,7 +232,6 @@ static NSString *CellIdentifier = @"CountryCell";
 
 - (BOOL)searchDisplayController:(UISearchDisplayController *)controller shouldReloadTableForSearchScope:(NSInteger)searchOption
 {
-    // Tells the table data source to reload when scope bar selection changes
     [self filterContentForSearchText:[self.searchDisplayController.searchBar text] scope:
      [self.searchDisplayController.searchBar scopeButtonTitles][searchOption]];
     
