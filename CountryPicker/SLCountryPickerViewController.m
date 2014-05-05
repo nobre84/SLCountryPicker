@@ -12,6 +12,7 @@ static NSString *CellIdentifier = @"CountryCell";
 @implementation SLCountryPickerViewController{
     NSMutableArray *_filteredList;
     NSArray *_sections;
+    NSArray *_preferredSection;
 }
 
 - (void)createSearchBar {
@@ -56,12 +57,17 @@ static NSString *CellIdentifier = @"CountryCell";
         
     }
     _sections = [self partitionObjects:countriesUnsorted collationStringSelector:@selector(self)];
-//    NSSortDescriptor *sortDescriptor = [[NSSortDescriptor alloc] initWithKey:@"name" ascending:YES];
-//    
-//    NSArray *sortDescriptors = @[sortDescriptor];
-//    
-//    countries = [countriesUnsorted sortedArrayUsingDescriptors:sortDescriptors];
-//    [countries sortUsingSelector:@selector(localizedCompare:)];
+    
+    if (self.preferredCountryCodes) {
+        NSMutableArray *newSection = [NSMutableArray new];
+        for (NSString *countryCode in self.preferredCountryCodes) {
+            NSString *displayNameString = [locale displayNameForKey:NSLocaleCountryCode value:countryCode];
+            NSDictionary *cd = @{@"name": displayNameString, @"code":countryCode};
+            [newSection addObject:cd];
+        }
+        _preferredSection = newSection;
+    }
+
     [self.tableView reloadData];
     
     [[NSNotificationCenter defaultCenter]
@@ -121,7 +127,12 @@ static NSString *CellIdentifier = @"CountryCell";
         return 1;
     }
     //we use sectionTitles and not sections
-    return [[UILocalizedIndexedCollation.currentCollation sectionTitles] count];
+    NSInteger count = [[UILocalizedIndexedCollation.currentCollation sectionTitles] count];
+    // If we have a featured section with most common countries, add another section
+    if (_preferredSection) {
+        count++;
+    }
+    return count;
 }
 
 - (NSInteger)tableView:(UITableView *)tableView numberOfRowsInSection:(NSInteger)section
@@ -129,6 +140,12 @@ static NSString *CellIdentifier = @"CountryCell";
     if (tableView == self.searchDisplayController.searchResultsTableView)
 	{
         return [_filteredList count];
+    }
+    if (section == 0 && _preferredSection) {
+        return [_preferredSection count];
+    }
+    if (_preferredSection) {
+        section--;
     }
     return [_sections[section] count];
 }
@@ -139,10 +156,16 @@ static NSString *CellIdentifier = @"CountryCell";
     if (tableView == self.searchDisplayController.searchResultsTableView) {
         return nil;
     }
+    if (section == 0 && _preferredSection) {
+        return self.preferredCountriesSectionName;
+    }
+    if (_preferredSection) {
+        section--;
+    }
     BOOL showSection = [[_sections objectAtIndex:section] count] != 0;
     //only show the section title if there are rows in the section
-    return (showSection) ? [[UILocalizedIndexedCollation.currentCollation sectionTitles] objectAtIndex:section] : nil;
-    
+    NSString *title = (showSection) ? [[UILocalizedIndexedCollation.currentCollation sectionTitles] objectAtIndex:section] : nil;
+    return title;
 }
 
 - (NSInteger)tableView:(UITableView *)tableView sectionForSectionIndexTitle:(NSString *)title atIndex:(NSInteger)index
@@ -171,7 +194,12 @@ static NSString *CellIdentifier = @"CountryCell";
     }
 	else
 	{
-        cd = _sections[indexPath.section][indexPath.row];
+        if (_preferredSection && indexPath.section == 0) {
+            cd = _preferredSection[indexPath.row];
+        }
+        else {
+            cd = _sections[indexPath.section - (_preferredSection ? 1 : 0)][indexPath.row];
+        }
         
         cell.textLabel.text = cd[@"name"];
         cell.textLabel.font = [UIFont preferredFontForTextStyle:UIFontTextStyleBody];
@@ -195,7 +223,12 @@ static NSString *CellIdentifier = @"CountryCell";
             cd = _filteredList[indexPath.row];
         }
         else {
-            cd = _sections[indexPath.section][indexPath.row];
+            if (_preferredSection && indexPath.section == 0) {
+                cd = _preferredSection[indexPath.row];
+            }
+            else {
+                cd = _sections[indexPath.section - (_preferredSection ? 1 : 0)][indexPath.row];
+            }
         }
         self.completionBlock(cd[@"name"],cd[@"code"]);
     }
@@ -228,7 +261,6 @@ static NSString *CellIdentifier = @"CountryCell";
     
     return YES;
 }
-
 
 - (BOOL)searchDisplayController:(UISearchDisplayController *)controller shouldReloadTableForSearchScope:(NSInteger)searchOption
 {
