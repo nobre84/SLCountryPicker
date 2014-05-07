@@ -5,6 +5,7 @@
 #import "SLCountryPickerViewController.h"
 
 static NSString *CellIdentifier = @"CountryCell";
+static NSString *featureIndexTitle = @"\u2605";
 @interface SLCountryPickerViewController ()<UISearchDisplayDelegate, UISearchBarDelegate>
 @property (nonatomic) UISearchDisplayController *searchController;
 @end
@@ -76,9 +77,11 @@ static NSString *CellIdentifier = @"CountryCell";
      name:UIContentSizeCategoryDidChangeNotification
      object:nil];
 }
+
 - (void)preferredContentSizeChanged:(NSNotification *)notification {
     [self.tableView reloadData];
 }
+
 - (void)dealloc
 {
     [[NSNotificationCenter defaultCenter]removeObserver:self name:UIContentSizeCategoryDidChangeNotification object:nil];
@@ -117,7 +120,13 @@ static NSString *CellIdentifier = @"CountryCell";
 
 - (NSArray *)sectionIndexTitlesForTableView:(UITableView *)tableView
 {
-    return [UILocalizedIndexedCollation.currentCollation sectionIndexTitles];
+    NSArray *localizedIndexTitles = [UILocalizedIndexedCollation.currentCollation sectionIndexTitles];
+    if (!_preferredSection) {
+        return localizedIndexTitles;
+    }
+    NSMutableArray *sections = [localizedIndexTitles mutableCopy];
+    [sections insertObject:featureIndexTitle atIndex:0];
+    return sections;
 }
 
 - (NSInteger)numberOfSectionsInTableView:(UITableView *)tableView
@@ -126,6 +135,7 @@ static NSString *CellIdentifier = @"CountryCell";
 	{
         return 1;
     }
+    if (!_sections) return 0;
     //we use sectionTitles and not sections
     NSInteger count = [[UILocalizedIndexedCollation.currentCollation sectionTitles] count];
     // If we have a featured section with most common countries, add another section
@@ -144,10 +154,8 @@ static NSString *CellIdentifier = @"CountryCell";
     if (section == 0 && _preferredSection) {
         return [_preferredSection count];
     }
-    if (_preferredSection) {
-        section--;
-    }
-    return [_sections[section] count];
+    NSInteger sectionIndex = section-(_preferredSection ? 1 : 0);
+    return [_sections[sectionIndex] count];
 }
 
 
@@ -159,12 +167,10 @@ static NSString *CellIdentifier = @"CountryCell";
     if (section == 0 && _preferredSection) {
         return self.preferredCountriesSectionName;
     }
-    if (_preferredSection) {
-        section--;
-    }
-    BOOL showSection = [[_sections objectAtIndex:section] count] != 0;
+    NSInteger sectionIndex = section-(_preferredSection ? 1 : 0);
+    BOOL showSection = [[_sections objectAtIndex:sectionIndex] count] != 0;
     //only show the section title if there are rows in the section
-    NSString *title = (showSection) ? [[UILocalizedIndexedCollation.currentCollation sectionTitles] objectAtIndex:section] : nil;
+    NSString *title = (showSection) ? [[UILocalizedIndexedCollation.currentCollation sectionTitles] objectAtIndex:sectionIndex] : nil;
     return title;
 }
 
@@ -198,7 +204,8 @@ static NSString *CellIdentifier = @"CountryCell";
             cd = _preferredSection[indexPath.row];
         }
         else {
-            cd = _sections[indexPath.section - (_preferredSection ? 1 : 0)][indexPath.row];
+            NSInteger sectionIndex = indexPath.section-(_preferredSection ? 1 : 0);
+            cd = _sections[sectionIndex][indexPath.row];
         }
         
         cell.textLabel.text = cd[@"name"];
@@ -227,7 +234,8 @@ static NSString *CellIdentifier = @"CountryCell";
                 cd = _preferredSection[indexPath.row];
             }
             else {
-                cd = _sections[indexPath.section - (_preferredSection ? 1 : 0)][indexPath.row];
+                NSInteger sectionIndex = indexPath.section-(_preferredSection ? 1 : 0);
+                cd = _sections[sectionIndex][indexPath.row];
             }
         }
         self.completionBlock(cd[@"name"],cd[@"code"]);
