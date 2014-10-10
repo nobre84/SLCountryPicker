@@ -52,7 +52,7 @@ static NSString *featureIndexTitle = @"\u2605";
     
     for (NSString *countryCode in countryCodes) {
         
-        NSString *displayNameString = [locale displayNameForKey:NSLocaleCountryCode value:countryCode];
+        NSString *displayNameString = [locale displayNameForKey:NSLocaleCountryCode value:countryCode] ?: countryCode;
         NSDictionary *cd = @{@"name": displayNameString, @"code":countryCode};
         [countriesUnsorted addObject:cd];
         
@@ -62,7 +62,7 @@ static NSString *featureIndexTitle = @"\u2605";
     if (self.preferredCountryCodes) {
         NSMutableArray *newSection = [NSMutableArray new];
         for (NSString *countryCode in self.preferredCountryCodes) {
-            NSString *displayNameString = [locale displayNameForKey:NSLocaleCountryCode value:countryCode];
+            NSString *displayNameString = [locale displayNameForKey:NSLocaleCountryCode value:countryCode] ?: countryCode;
             NSDictionary *cd = @{@"name": displayNameString, @"code":countryCode};
             [newSection addObject:cd];
         }
